@@ -2163,10 +2163,9 @@ spec:
     port: 443
     protocol: TCP
     targetPort: 8080
+  type: NodePort
   selector:
     app.kubernetes.io/name: argocd-server
-  type: NodePort
- 
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -2212,13 +2211,6 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       serviceAccountName: argocd-application-controller
-      nodeSelector:
-        purpose: "common" 
-      tolerations:
-      - key: "purpose"
-        operator: "Equal"
-        value: "common"
-        effect: "NoSchedule"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -2250,13 +2242,6 @@ spec:
         volumeMounts:
         - mountPath: /shared
           name: static-files
-      nodeSelector:
-        purpose: "common" 
-      tolerations:
-      - key: "purpose"
-        operator: "Equal"
-        value: "common"
-        effect: "NoSchedule"
       initContainers:
       - command:
         - cp
@@ -2301,13 +2286,6 @@ spec:
         name: redis
         ports:
         - containerPort: 6379
-      nodeSelector:
-        purpose: "common" 
-      tolerations:
-      - key: "purpose"
-        operator: "Equal"
-        value: "common"
-        effect: "NoSchedule"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -2354,13 +2332,6 @@ spec:
           name: ssh-known-hosts
         - mountPath: /app/config/tls
           name: tls-certs
-      nodeSelector:
-        purpose: "common" 
-      tolerations:
-      - key: "purpose"
-        operator: "Equal"
-        value: "common"
-        effect: "NoSchedule"
       volumes:
       - configMap:
           name: argocd-ssh-known-hosts-cm
@@ -2377,7 +2348,6 @@ metadata:
     app.kubernetes.io/name: argocd-server
     app.kubernetes.io/part-of: argocd
   name: argocd-server
-  namespace: argocd
 spec:
   selector:
     matchLabels:
@@ -2392,8 +2362,8 @@ spec:
         - argocd-server
         - --staticassets
         - /shared/app
-        - --insecure
-        image: argoproj/argocd:v1.0.0
+        - insecrue
+        image: argoproj/argocd:v1.4.2
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -2412,29 +2382,18 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 30
         volumeMounts:
-        - mountPath: /shared
-          name: static-files
-      initContainers:
-      - command:
-        - cp
-        - -r
-        - /app
-        - /shared
-        image: argoproj/argocd-ui:v1.0.0
-        imagePullPolicy: Always
-        name: ui
-        volumeMounts:
-        - mountPath: /shared
-          name: static-files
-      nodeSelector:
-        purpose: "common" 
-      tolerations:
-      - key: "purpose"
-        operator: "Equal"
-        value: "common"
-        effect: "NoSchedule"
+        - mountPath: /app/config/ssh
+          name: ssh-known-hosts
+        - mountPath: /app/config/tls
+          name: tls-certs
       serviceAccountName: argocd-server
       volumes:
       - emptyDir: {}
         name: static-files
+      - configMap:
+          name: argocd-ssh-known-hosts-cm
+        name: ssh-known-hosts
+      - configMap:
+          name: argocd-tls-certs-cm
+        name: tls-certs
 
